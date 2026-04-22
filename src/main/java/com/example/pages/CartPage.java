@@ -6,6 +6,8 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 
+import java.util.List;
+
 public class CartPage extends BasePage {
 
     private final By subtotalLabel = By.xpath(
@@ -17,6 +19,10 @@ public class CartPage extends BasePage {
     );
 
     private final By proceedToCheckoutButton = By.name("proceedToRetailCheckout");
+
+    private final By activeCartLineRows = By.xpath(
+            "//div[@id='sc-active-cart']//div[contains(@class,'sc-list-item')][@data-asin]"
+    );
 
     public CartPage(WebDriver driver) {
         super(driver);
@@ -32,6 +38,59 @@ public class CartPage extends BasePage {
     @Step("Get subtotal amount")
     public double getSubtotalAmount() {
         return parsePrice(getText(subtotalAmount));
+    }
+
+    @Step("Count active cart line rows (physical items)")
+    public int getActiveCartLineItemCount() {
+        pause(1500);
+        List<WebElement> rows = driver.findElements(activeCartLineRows);
+        int visible = 0;
+        for (WebElement row : rows) {
+            try {
+                if (row.isDisplayed()) {
+                    visible++;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return visible;
+    }
+
+    @Step("Sum line totals shown for each active cart item")
+    public double getSumOfActiveCartLineTotals() {
+        pause(1500);
+        List<WebElement> rows = driver.findElements(activeCartLineRows);
+        double sum = 0;
+        for (WebElement row : rows) {
+            try {
+                if (!row.isDisplayed()) {
+                    continue;
+                }
+                sum += parsePrice(readLinePriceText(row));
+            } catch (Exception ignored) {
+            }
+        }
+        return sum;
+    }
+
+    private String readLinePriceText(WebElement row) {
+        try {
+            return firstVisibleIn(
+                    row,
+                    By.cssSelector(".sc-apex-cart-item-total-price .a-offscreen"),
+                    By.cssSelector(".sc-apex-cart-item-total-price"),
+                    By.xpath(".//span[contains(@class,'sc-product-price')]//span[contains(@class,'a-offscreen')]"),
+                    By.xpath(".//span[contains(@class,'sc-product-price')]"),
+                    By.cssSelector(".sc-item-price-block .a-price .a-offscreen"),
+                    By.xpath(".//div[contains(@class,'sc-item-price-block')]//span[contains(@class,'a-offscreen')]")
+            ).getText();
+        } catch (Exception e) {
+            List<WebElement> offscreens = row.findElements(By.cssSelector("span.a-price span.a-offscreen"));
+            if (offscreens.isEmpty()) {
+                throw e;
+            }
+            return offscreens.get(offscreens.size() - 1).getText();
+        }
     }
 
     @Step("Set first cart item quantity to 2")

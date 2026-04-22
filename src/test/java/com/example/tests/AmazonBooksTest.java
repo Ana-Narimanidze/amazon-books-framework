@@ -35,14 +35,20 @@ public class AmazonBooksTest extends BaseTest {
         double secondBookPrice = secondBookPage.getProductPrice();
         secondBookPage.addToCart();
 
-        double expectedTotal = round(firstBookPrice + secondBookPrice);
-
         CartPage cartPage = secondBookPage.goToCart();
         Assert.assertTrue(cartPage.isSubtotalLabelVisible(), "Cart Subtotal label is not visible.");
 
+        Assert.assertEquals(cartPage.getActiveCartLineItemCount(), 2,
+                "The basket should list exactly two book line items.");
+
+        Assert.assertTrue(firstBookPrice > 0 && secondBookPrice > 0,
+                "Each product detail page should expose a positive price.");
+
+        double lineTotalsSum = round(cartPage.getSumOfActiveCartLineTotals());
         double actualSubtotal = round(cartPage.getSubtotalAmount());
-        Assert.assertEquals(actualSubtotal, expectedTotal,
-                "Cart subtotal does not match the sum of the selected books.");
+        Assert.assertEquals(actualSubtotal, lineTotalsSum,
+                "Cart subtotal should match the sum of the line totals Amazon shows in the basket "
+                        + "(detail-page prices can differ from the offer placed in the cart).");
 
         SignInPage signInPage = cartPage.proceedToCheckout();
         Assert.assertTrue(signInPage.isLoginPageDisplayed(), "Amazon login page was not displayed.");

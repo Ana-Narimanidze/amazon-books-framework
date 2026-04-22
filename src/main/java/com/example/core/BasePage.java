@@ -158,4 +158,21 @@ public class BasePage {
         }
         throw new NoSuchElementException("No visible element found for provided locators");
     }
+
+    protected WebElement firstVisibleIn(WebElement root, By... locators) {
+        for (By locator : locators) {
+            try {
+                for (WebElement element : root.findElements(locator)) {
+                    try {
+                        if (element.isDisplayed()) {
+                            return element;
+                        }
+                    } catch (StaleElementReferenceException ignored) {
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        throw new NoSuchElementException("No visible element found under root for provided locators");
+    }
 }
